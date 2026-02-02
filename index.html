@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Work-Life Balance v2.4</title>
+    <title>Work-Life Balance v2.5</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -26,8 +26,6 @@
 
         .header-actions { display: flex; gap: 15px; align-items: center; }
         .btn-icon { background: none; border: none; font-size: 1.2rem; color: var(--primary); cursor: pointer; padding: 5px; position: relative; }
-        
-        /* Date Picker Hack */
         #dateJumper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 
         /* Scroller */
@@ -103,11 +101,11 @@
 
     <div id="loadingMask">
         <i class="fa-solid fa-cloud fa-bounce" style="font-size:3rem"></i>
-        <span>正在連線...</span>
+        <span>連線中...</span>
     </div>
 
     <header>
-        <h1>WLB <span class="ver-tag">v2.4</span> <div class="status-dot" id="statusDot"></div></h1>
+        <h1>WLB <span class="ver-tag">v2.5</span> <div class="status-dot" id="statusDot"></div></h1>
         <div class="header-actions">
             <button class="btn-icon">
                 <i class="fa-solid fa-calendar-days"></i>
@@ -204,7 +202,11 @@
             <h3 id="modalDateTitle" style="margin-top:0">新紀錄</h3>
             <form id="recForm" onsubmit="window.app.saveRecord(event)">
                 <input type="hidden" id="editId"><input type="hidden" id="recType" value="OT">
-                <div style="display:flex; background:#faf9f7; padding:5px; border-radius:18px; margin-bottom:25px; border:1px solid var(--line);">
+                
+                <label class="form-label" style="margin-top:0">日期</label>
+                <input type="date" class="form-input" id="inpDate" required onchange="window.app.onModalDateChange(this.value)">
+
+                <div style="display:flex; background:#faf9f7; padding:5px; border-radius:18px; margin:20px 0; border:1px solid var(--line);">
                     <button type="button" id="btnTypeOT" class="btn" style="margin:0; background:white; color:var(--primary-dark); box-shadow:0 2px 8px rgba(0,0,0,0.05);" onclick="window.app.setType('OT')">加班 OT</button>
                     <button type="button" id="btnTypeLeave" class="btn" style="margin:0; background:transparent; color:var(--text-sub); box-shadow:none;" onclick="window.app.setType('Leave')">請假</button>
                 </div>
@@ -264,7 +266,6 @@
             }
         };
         let selectedDate = new Date();
-        // Use a separate view date so we can jump around while keeping today selected initially
         let currentViewDate = new Date(); 
         let curType = 'OT';
         let editId = null;
@@ -321,7 +322,6 @@
                 } catch(e) { alert("❌ 錯誤：" + e.message); }
                 finally { btn.innerText = originalText; btn.disabled = false; }
             },
-            // Improved CSV Import
             importHolidays: (input) => {
                 const file = input.files[0]; if(!file) return;
                 const r = new FileReader();
@@ -390,16 +390,21 @@
             calcOT: () => calcOT(), 
             saveRecord: (e) => saveRecord(e), delRecord: (b) => delRecord(b), selectDate: (d) => selectDate(d),
             
-            // Date Jump Function
             jumpToDate: (val) => {
                 if(!val) return;
-                // val is YYYY-MM
                 const [y, m] = val.split('-');
-                // Set currentViewDate to the 15th of that month to ensure the month is centered
                 currentViewDate = new Date(y, m - 1, 15);
                 generateScroller();
-                // Select the 1st of that month
                 window.app.selectDate(new Date(y, m - 1, 1));
+            },
+            // FIX: Handle date change in modal
+            onModalDateChange: (val) => {
+                if(!val) return;
+                const d = new Date(val);
+                const status = getDayStatus(d);
+                // Auto set std hours based on new date status
+                const defaultStd = status.isOff ? 0 : 9;
+                window.app.setStdHours(defaultStd);
             }
         };
 
@@ -467,10 +472,8 @@
             document.getElementById('dispOTDays').innerText = (ot/(s.dailyHours||8)).toFixed(1); document.getElementById('dispAL').innerText = al;
         }
 
-        // Updated Scroller to use currentViewDate
         function generateScroller() {
             const el = document.getElementById('dateScroller'); el.innerHTML = '';
-            // Range: -15 days to +45 days relative to currentViewDate
             const start = new Date(currentViewDate); 
             start.setDate(start.getDate() - 15);
             
@@ -487,7 +490,6 @@
                 el.appendChild(chip);
             }
             
-            // Scroll to selected date if it's visible in this range
             setTimeout(()=> {
                 const chip = Array.from(document.querySelectorAll('.date-chip')).find(el => el.innerHTML.includes(selectedDate.getDate()));
                 if(chip && selectedDate.getMonth() === currentViewDate.getMonth()) chip.scrollIntoView({inline:'center'});
@@ -500,12 +502,17 @@
             const dStr = selectedDate.toISOString().split('T')[0];
             const status = getDayStatus(selectedDate);
             
-            // Auto-set Std Hours based on day type
+            // Set Date input
+            document.getElementById('inpDate').value = dStr;
+
+            // Auto-set Std Hours
             let defaultStd = status.isOff ? 0 : 9;
             window.app.setStdHours(defaultStd);
 
             if(r) { 
                 editId=r.id; 
+                // Override date input with record date
+                document.getElementById('inpDate').value = r.date;
                 document.getElementById('inpNote').value=r.note||''; 
                 setType(r.type); 
                 if(r.type==='OT') document.getElementById('inpHours').value=r.val; 
@@ -514,9 +521,11 @@
             } else { 
                 editId=null; 
                 document.getElementById('recForm').reset(); 
+                // Ensure date input is set again after reset
+                document.getElementById('inpDate').value = dStr;
                 setType('OT'); 
                 document.getElementById('btnDel').style.display='none';
-                window.app.setStdHours(defaultStd); // ensure reset
+                window.app.setStdHours(defaultStd); 
             }
         }
         
@@ -532,7 +541,7 @@
             const stdHours = Number(document.getElementById('inpStdVal').value);
             
             let durationMins = mo - mi;
-            if(durationMins < 0) durationMins += 24*60; // handle cross midnight (simple)
+            if(durationMins < 0) durationMins += 24*60; 
 
             const otMins = Math.max(0, durationMins - (stdHours * 60));
             
@@ -546,13 +555,28 @@
             const originalText = btn.innerText;
             btn.innerText = "⏳ 儲存中..."; btn.disabled = true;
             try {
+                // Read date from Input
+                const dateVal = document.getElementById('inpDate').value;
+                if(!dateVal) throw new Error("請選擇日期");
+
                 const val = curType==='OT' ? document.getElementById('inpHours').value : document.getElementById('inpDays').value;
                 if(!val) throw new Error("請輸入數值");
-                const rec = { id: editId||Date.now(), date: selectedDate.toISOString().split('T')[0], type: curType, subType: curType==='Leave'?document.getElementById('inpLeaveType').value:null, val: val, note: document.getElementById('inpNote').value };
+                
+                const rec = { id: editId||Date.now(), date: dateVal, type: curType, subType: curType==='Leave'?document.getElementById('inpLeaveType').value:null, val: val, note: document.getElementById('inpNote').value };
+                
                 if(editId) localData.records = localData.records.filter(r=>r.id!==editId);
-                localData.records.push(rec); await pushToCloud(); 
+                localData.records.push(rec); 
+                
+                await pushToCloud(); 
                 alert("✅ 儲存成功！"); 
                 window.app.closeModal();
+                
+                // Auto jump to the date of the record
+                const [y, m, d] = dateVal.split('-');
+                currentViewDate = new Date(y, m-1, 15); // sync view
+                generateScroller();
+                window.app.selectDate(new Date(y, m-1, d)); // select day
+
             } catch(err) { alert("❌ 錯誤：" + err.message); }
             finally { btn.innerText = originalText; btn.disabled = false; }
         }
