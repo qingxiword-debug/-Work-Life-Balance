@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Work-Life Balance v3.4 (Rescue)</title>
+    <title>Work-Life Balance v3.5</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -157,10 +157,11 @@
     <div id="loadingMask">
         <i class="fa-solid fa-cloud fa-bounce" style="font-size:3rem"></i>
         <span>同步資料庫...</span>
+        <button onclick="document.getElementById('loadingMask').style.display='none'" style="margin-top:20px; padding:10px 20px; background:white; border:1px solid #ccc; border-radius:10px; font-size:0.8rem;">強制進入 (5秒後自動)</button>
     </div>
 
     <header>
-        <h1>WLB <span class="ver-tag">v3.4</span> <div class="status-dot" id="statusDot"></div></h1>
+        <h1>WLB <span class="ver-tag">v3.5</span> <div class="status-dot" id="statusDot"></div></h1>
         <div class="header-actions">
             <button class="btn-icon">
                 <i class="fa-solid fa-calendar-days"></i>
@@ -206,3 +207,619 @@
                     <div class="sc-val-row"><span class="sc-val" id="cardAL_Rem">--</span><span class="sc-unit">天</span></div>
                     <div><div class="progress-container"><div class="progress-bar" id="barAL" style="width:0%"></div></div><div class="sc-sub"><span>已用 <span id="cardAL_Used">0</span></span><span>年額 <span id="cardAL_Total">0</span></span></div></div>
                 </div>
+                <div class="stat-card card-ot">
+                    <div class="sc-icon-box"><i class="fa-solid fa-briefcase"></i></div>
+                    <div class="sc-title">OT 時數</div>
+                    <div class="sc-val-row"><span class="sc-val" id="cardOT_Hours">--</span><span class="sc-unit">h</span></div>
+                    <div class="sc-sub" style="margin-top:10px">累計加班總時數</div>
+                </div>
+                <div class="stat-card card-cl">
+                    <div class="sc-icon-box"><i class="fa-solid fa-calendar-check"></i></div>
+                    <div class="sc-title">OT 補假</div>
+                    <div class="sc-val-row"><span class="sc-val" id="cardCL_Rem">--</span><span class="sc-unit">天</span></div>
+                    <div><div class="progress-container"><div class="progress-bar" id="barCL" style="width:0%"></div></div><div class="sc-sub"><span>已抵扣 <span id="cardCL_Used">0</span></span><span>可換 <span id="cardCL_Total">0</span></span></div></div>
+                </div>
+            </div>
+            <div class="chart-section"><div class="chart-header"><i class="fa-solid fa-chart-pie"></i> OT 時段分佈</div><div class="chart-wrap"><canvas id="pieChart"></canvas></div></div>
+            <div class="chart-section"><div class="chart-header"><i class="fa-solid fa-chart-simple"></i> 每月 OT 趨勢</div><div class="chart-wrap"><canvas id="barChart"></canvas></div></div>
+        </div>
+
+        <div id="tab-logs" class="tab-content">
+            <h3>歷史紀錄</h3>
+            <div id="fullList"></div>
+        </div>
+    </main>
+
+    <button class="fab" onclick="window.app.triggerAdd()"><i class="fa-solid fa-plus"></i></button>
+
+    <nav class="bottom-nav">
+        <button class="nav-btn active" onclick="window.app.switchTab('home')" id="nav-home"><i class="fa-solid fa-calendar-days"></i> 日程</button>
+        <button class="nav-btn" onclick="window.app.switchTab('stats')" id="nav-stats"><i class="fa-solid fa-chart-simple"></i> 統計</button>
+        <button class="nav-btn" onclick="window.app.switchTab('logs')" id="nav-logs"><i class="fa-solid fa-list"></i> 紀錄</button>
+    </nav>
+
+    <div class="modal-overlay" id="setModal" onclick="if(event.target===this) document.getElementById('setModal').classList.remove('open')">
+        <div class="modal-card">
+            <h3 style="margin-top:0">設定</h3>
+            <label class="form-label">工作模式</label>
+            <div class="toggle-group">
+                <div class="toggle-opt" id="modeMonFri" onclick="window.app.setWorkMode('mon_fri')">一至五</div>
+                <div class="toggle-opt" id="modeAltSat" onclick="window.app.setWorkMode('alt_sat')">長短週</div>
+            </div>
+            <div id="satSetting" style="display:none; margin-top:10px;">
+                <label class="form-label">長短週基準日</label><input type="date" class="form-input" id="setBaseSat">
+            </div>
+            
+            <label class="form-label">假期設定</label>
+            <div style="background:#faf9f7; padding:15px; border-radius:16px; border:1px solid var(--line); margin-bottom:15px;">
+                <div class="cal-header">
+                    <button class="cal-nav-btn" onclick="window.app.navHolidayMonth(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+                    <span class="cal-title" id="holCalTitle"></span>
+                    <button class="cal-nav-btn" onclick="window.app.navHolidayMonth(1)"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+                <div class="cal-grid"><div class="cal-head">日</div><div class="cal-head">一</div><div class="cal-head">二</div><div class="cal-head">三</div><div class="cal-head">四</div><div class="cal-head">五</div><div class="cal-head">六</div></div>
+                <div class="cal-grid" id="holCalBody"></div>
+                <p style="text-align:center; font-size:0.75rem; color:var(--text-sub); margin-top:10px;">🔴 紅色為假期</p>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                <div><label class="form-label">年假額度</label><input type="number" class="form-input" id="setAL"></div>
+                <div><label class="form-label">日工時</label><input type="number" class="form-input" id="setDaily"></div>
+            </div>
+            <label class="form-label">入職日期</label><input type="date" class="form-input" id="setJoinDate">
+            <button class="btn btn-primary" onclick="window.app.saveSettings(this)">儲存設定</button>
+
+            <hr style="margin:20px 0; border:0; border-top:1px solid #eee;">
+            <h4 style="color:#ef4444; margin:0">數據診斷區 (Debug)</h4>
+            <p style="font-size:0.8rem; color:#666;">如果資料看不到，請點下方按鈕檢查。</p>
+            <button class="btn btn-outline" onclick="window.app.showDebugData()">顯示所有原始資料</button>
+            <div id="rescueBox" class="rescue-box"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="recModal" onclick="if(event.target===this) window.app.closeModal()">
+        <div class="modal-card">
+            <h3 id="modalDateTitle" style="margin-top:0">新紀錄</h3>
+            <form id="recForm" onsubmit="window.app.saveRecord(event)">
+                <input type="hidden" id="editId"><input type="hidden" id="recType" value="OT">
+                <label class="form-label" style="margin-top:0">日期</label>
+                <input type="date" class="form-input" id="inpDate" required onchange="window.app.onModalDateChange(this.value)">
+
+                <div style="display:flex; background:#faf9f7; padding:5px; border-radius:18px; margin:20px 0; border:1px solid var(--line);">
+                    <button type="button" id="btnTypeOT" class="btn" style="margin:0; background:white; color:var(--primary-dark); box-shadow:0 2px 8px rgba(0,0,0,0.05);" onclick="window.app.setType('OT')">加班 OT</button>
+                    <button type="button" id="btnTypeLeave" class="btn" style="margin:0; background:transparent; color:var(--text-sub); box-shadow:none;" onclick="window.app.setType('Leave')">請假</button>
+                </div>
+                
+                <div id="secOT">
+                    <label class="form-label">扣除工時</label>
+                    <div class="std-hours-group">
+                        <button type="button" class="std-btn active" id="btnStd9" onclick="window.app.setStdHours(9)">9h</button>
+                        <button type="button" class="std-btn" id="btnStd8" onclick="window.app.setStdHours(8)">8h</button>
+                        <button type="button" class="std-btn" id="btnStd4" onclick="window.app.setStdHours(4)">4h</button>
+                        <button type="button" class="std-btn" id="btnStd0" onclick="window.app.setStdHours(0)">0h</button>
+                    </div>
+                    <input type="number" id="inpStdVal" value="9" style="display:none;"> 
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                        <div><label class="form-label">上班</label><input type="time" class="form-input" id="inpIn" onchange="window.app.calcOT()"></div>
+                        <div><label class="form-label">下班</label><input type="time" class="form-input" id="inpOut" onchange="window.app.calcOT()"></div>
+                    </div>
+                    <div id="otMsg" style="text-align:right; font-size:0.8rem; color:var(--primary); margin-top:8px; height:1.2em;"></div>
+                    <label class="form-label">OT 時數</label><input type="number" step="0.1" class="form-input" id="inpHours" placeholder="結果">
+                </div>
+
+                <div id="secLeave" style="display:none;">
+                    <label class="form-label">假別</label>
+                    <select class="form-input" id="inpLeaveType"><option value="AL">年假/補假 (AL)</option><option value="SL">病假 (SL)</option></select>
+                    <label class="form-label">天數</label><input type="number" step="0.5" class="form-input" id="inpDays" value="1">
+                    <p style="font-size:0.75rem; color:var(--text-sub); margin-top:5px">優先扣除 OT 補假，不足時扣年假</p>
+                </div>
+                <label class="form-label">備註</label><input type="text" class="form-input" id="inpNote">
+                
+                <div style="margin-top:20px; display:flex; align-items:center; gap:10px;">
+                    <input type="checkbox" id="chkIsHoliday" style="width:20px; height:20px;">
+                    <label for="chkIsHoliday" style="font-size:0.9rem; color:var(--text-main)">設為假期 (紅日)</label>
+                </div>
+
+                <button type="submit" class="btn btn-primary">儲存</button>
+                <button type="button" class="btn btn-outline" style="display:none;" id="btnDel" onclick="window.app.delRecord(this)">刪除</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        window.onerror = function(msg, url, line) {
+            alert("程式發生錯誤: " + msg + "\n行數: " + line);
+            document.getElementById('loadingMask').style.display='none';
+        };
+        // Failsafe Timer
+        setTimeout(() => {
+            const m = document.getElementById('loadingMask');
+            if(m && m.style.display !== 'none') {
+                m.style.opacity = '0';
+                setTimeout(()=>m.style.display='none', 500);
+                document.getElementById('statusDot').className = 'status-dot offline';
+            }
+        }, 5000);
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // CONFIG
+        const firebaseConfig = {
+            apiKey: "AIzaSyAi_iDY4JeppmveW5-Uq2cMRWJY9jeT9Dw",
+            authDomain: "work-life-balance-9f09b.firebaseapp.com",
+            projectId: "work-life-balance-9f09b",
+            storageBucket: "work-life-balance-9f09b.firebasestorage.app",
+            messagingSenderId: "869347289477",
+            appId: "1:869347289477:web:c2bee07bc2aeb92973bcec",
+            measurementId: "G-94EXTK7W8Y"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const docRef = doc(db, "worklife_app", "personal_data_v2");
+
+        const PRESET_HOLIDAYS = [
+            {date:"2025-01-01",name:"元旦"},{date:"2025-01-29",name:"農曆年初一"},{date:"2025-01-30",name:"農曆年初二"},{date:"2025-01-31",name:"農曆年初三"},{date:"2025-04-04",name:"清明節"},{date:"2025-04-18",name:"耶穌受難節"},{date:"2025-04-19",name:"耶穌受難節翌日"},{date:"2025-04-21",name:"復活節星期一"},{date:"2025-05-01",name:"勞動節"},{date:"2025-05-05",name:"佛誕"},{date:"2025-05-31",name:"端午節"},{date:"2025-07-01",name:"香港特別行政區成立紀念日"},{date:"2025-10-01",name:"國慶日"},{date:"2025-10-07",name:"中秋節翌日"},{date:"2025-10-29",name:"重陽節"},{date:"2025-12-25",name:"聖誕節"},{date:"2025-12-26",name:"聖誕節後第一個周日"},
+            {date:"2026-01-01",name:"元旦"},{date:"2026-02-17",name:"農曆年初一"},{date:"2026-02-18",name:"農曆年初二"},{date:"2026-02-19",name:"農曆年初三"},{date:"2026-04-03",name:"耶穌受難節"},{date:"2026-04-04",name:"耶穌受難節翌日"},{date:"2026-04-06",name:"清明節翌日"},{date:"2026-04-07",name:"復活節星期一翌日"},{date:"2026-05-01",name:"勞動節"},{date:"2026-05-25",name:"佛誕翌日"},{date:"2026-06-19",name:"端午節"},{date:"2026-07-01",name:"香港特別行政區成立紀念日"},{date:"2026-09-26",name:"中秋節翌日"},{date:"2026-10-01",name:"國慶日"},{date:"2026-10-19",name:"重陽節翌日"},{date:"2026-12-25",name:"聖誕節"},{date:"2026-12-26",name:"聖誕節後第一個周日"}
+        ];
+
+        let localData = {
+            records: [],
+            settings: { workMode: "alt_sat", baseSat: "2025-09-13", joinDate: "2024-09-01", holidays: PRESET_HOLIDAYS, alBalance: 14, dailyHours: 8 }
+        };
+        let selectedDate = new Date();
+        let calViewDate = new Date(); 
+        let holidayCalDate = new Date(); 
+        let curType = 'OT';
+        let editId = null;
+        let pieChart = null, barChart = null;
+        let isDataLoaded = false;
+
+        // FIXED HELPER: FORCE LOCAL DATE STRING (YYYY-MM-DD)
+        function formatDate(d) {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
+
+        onSnapshot(docRef, (docSnap) => {
+            const loading = document.getElementById('loadingMask');
+            const dot = document.getElementById('statusDot');
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                if(!data.settings.workMode) data.settings.workMode = 'alt_sat';
+                if(data.settings.holidays.length && typeof data.settings.holidays[0] === 'string') {
+                    data.settings.holidays = PRESET_HOLIDAYS;
+                }
+                
+                // DATA RECOVERY: Normalize Dates on Load
+                if(data.records) {
+                    data.records.forEach(r => {
+                        r.date = r.date.replace(/\//g, '-');
+                    });
+                }
+
+                localData = data;
+                dot.className = 'status-dot online';
+                isDataLoaded = true;
+                refreshApp();
+            } else { 
+                dot.className = 'status-dot online';
+                isDataLoaded = true; 
+            }
+            if(loading) { loading.style.opacity = '0'; setTimeout(()=>loading.style.display='none', 500); }
+        }, (err) => { document.getElementById('statusDot').className = 'status-dot offline'; document.getElementById('loadingMask').style.display='none'; });
+
+        window.app = {
+            openSettings: () => {
+                document.getElementById('setModal').classList.add('open');
+                const s = localData.settings;
+                window.app.setWorkMode(s.workMode || 'alt_sat');
+                document.getElementById('setBaseSat').value = s.baseSat || '';
+                document.getElementById('setJoinDate').value = s.joinDate || '';
+                document.getElementById('setAL').value = s.alBalance;
+                document.getElementById('setDaily').value = s.dailyHours;
+                holidayCalDate = new Date();
+                renderHolidayCalendar();
+            },
+            setWorkMode: (mode) => {
+                localData.settings.workMode = mode;
+                document.getElementById('modeMonFri').className = `toggle-opt ${mode==='mon_fri'?'active':''}`;
+                document.getElementById('modeAltSat').className = `toggle-opt ${mode==='alt_sat'?'active':''}`;
+                document.getElementById('satSetting').style.display = mode==='alt_sat' ? 'block' : 'none';
+            },
+            saveSettings: async (btn) => {
+                if(!isDataLoaded) return alert("資料尚未同步，請稍後");
+                const originalText = btn.innerText;
+                btn.innerText = "⏳..."; btn.disabled = true;
+                try {
+                    const s = localData.settings;
+                    s.baseSat = document.getElementById('setBaseSat').value;
+                    s.joinDate = document.getElementById('setJoinDate').value;
+                    s.alBalance = Number(document.getElementById('setAL').value);
+                    s.dailyHours = Number(document.getElementById('setDaily').value);
+                    await pushToCloud();
+                    document.getElementById('setModal').classList.remove('open');
+                    alert("✅ 已儲存");
+                } catch(e) { alert("❌ 錯誤"); }
+                finally { btn.innerText = originalText; btn.disabled = false; }
+            },
+            showDebugData: () => {
+                const box = document.getElementById('rescueBox');
+                box.style.display = 'block';
+                if(!localData.records || localData.records.length === 0) {
+                    box.innerText = "資料庫是空的 (0 筆紀錄)。可能是被覆蓋了。";
+                } else {
+                    box.innerText = JSON.stringify(localData.records, null, 2);
+                }
+            },
+            navHolidayMonth: (d) => {
+                holidayCalDate.setMonth(holidayCalDate.getMonth() + d);
+                renderHolidayCalendar();
+            },
+            toggleHoliday: (dStr) => {
+                const exists = localData.settings.holidays.find(h => h.date === dStr);
+                if(exists) {
+                    if(confirm(`移除 ${dStr} (${exists.name}) 假期？`)) {
+                        localData.settings.holidays = localData.settings.holidays.filter(h => h.date !== dStr);
+                    }
+                } else {
+                    const name = prompt(`將 ${dStr} 設為假期，請輸入名稱：`, "休假");
+                    if(name) localData.settings.holidays.push({date: dStr, name: name});
+                }
+                renderHolidayCalendar();
+            },
+            
+            triggerAdd: () => openModal(),
+            closeModal: () => document.getElementById('recModal').classList.remove('open'),
+            switchTab: (t) => {
+                document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));
+                document.querySelectorAll('.nav-btn').forEach(e=>e.classList.remove('active'));
+                document.getElementById(`tab-${t}`).classList.add('active');
+                document.getElementById(`nav-${t}`).classList.add('active');
+                if(t==='stats') { updateStats(); renderCharts(); }
+            },
+            setType: (t) => setType(t), 
+            setStdHours: (h) => {
+                document.getElementById('inpStdVal').value = h;
+                document.querySelectorAll('.std-btn').forEach(b => b.classList.remove('active'));
+                document.getElementById('btnStd'+h).classList.add('active');
+                window.app.calcOT();
+            },
+            calcOT: () => calcOT(), 
+            saveRecord: (e) => saveRecord(e), delRecord: (b) => delRecord(b), 
+            
+            navMonth: (dir) => {
+                calViewDate.setMonth(calViewDate.getMonth() + dir);
+                renderBigCalendar();
+            },
+            selectDate: (d) => selectDate(d),
+            onModalDateChange: (val) => {
+                if(!val) return;
+                const d = new Date(val); 
+                const status = getDayStatus(d);
+                let defaultStd = 9; 
+                if(status.isOff) defaultStd = 0; 
+                else if(status.type === 'WORK_SAT') defaultStd = 4;
+                window.app.setStdHours(defaultStd);
+            },
+            jumpToDate: (val) => {
+                if(!val) return;
+                const [y, m] = val.split('-');
+                calViewDate = new Date(y, m - 1, 1);
+                renderBigCalendar();
+                window.app.selectDate(new Date(y, m - 1, 1));
+            }
+        };
+
+        async function pushToCloud() { await setDoc(docRef, localData); }
+
+        function getDayStatus(d) {
+            const dStr = formatDate(d); // USE LOCAL DATE HELPER
+            const s = localData.settings;
+            const hol = s.holidays.find(h=>h.date===dStr);
+            if(hol) return { type: 'HOLIDAY', name: hol.name, isOff: true };
+            if(d.getDay()===0) return { type: 'OFF', name: '週日', isOff: true };
+            if(d.getDay()===6) {
+                if(s.workMode==='mon_fri') return { type: 'OFF', name: '週六(休)', isOff: true };
+                if(!s.baseSat) return { type: 'OFF', name: '週六', isOff: true }; 
+                const base = new Date(s.baseSat); const target = new Date(dStr);
+                if(target < base) return { type: 'OFF', name: '週六', isOff: true };
+                
+                let cnt = 0, curr = new Date(base);
+                // Safe guard against infinite loop
+                if (curr > target) return { type: 'OFF', name: '週六', isOff: true };
+
+                while(curr <= target) {
+                    const cStr = formatDate(curr);
+                    if(!s.holidays.some(h=>h.date===cStr)) { if(cStr===dStr) break; cnt++; }
+                    curr.setDate(curr.getDate()+7);
+                }
+                return (cnt%2===0) ? { type: 'WORK_SAT', name: '長週上班', isOff: false } : { type: 'OFF_SAT', name: '短週休假', isOff: true };
+            }
+            return { type: 'WORK', name: '工作日', isOff: false };
+        }
+
+        function refreshApp() {
+            renderBigCalendar();
+            const dStr = formatDate(selectedDate); // USE LOCAL DATE HELPER
+            const status = getDayStatus(selectedDate);
+            const badgeClass = status.isOff ? (status.type==='HOLIDAY'?'badge-hol':'badge-off') : 'badge-work';
+            const statusText = status.isOff ? (status.type==='HOLIDAY'?status.name:'休假') : '上班';
+            
+            document.getElementById('dateTitleLabel').innerHTML = dStr;
+            document.getElementById('dateStatusBadge').innerHTML = `<span class="dh-badge ${badgeClass}">${statusText}</span>`;
+
+            const recs = localData.records.filter(r => r.date === dStr);
+            document.getElementById('dayRecords').innerHTML = recs.length ? recs.map(renderItem).join('') : `<div style="text-align:center;padding:30px;color:#ccc;background:#faf9f7;border-radius:16px;border:1px solid #eee"><div style="font-size:0.9rem">無紀錄</div></div>`;
+            updateStats(); renderAllLogs();
+        }
+
+        function renderBigCalendar() {
+            const grid = document.getElementById('bcBody'); grid.innerHTML = '';
+            const y = calViewDate.getFullYear(), m = calViewDate.getMonth();
+            document.getElementById('bcTitle').innerText = `${y}年 ${m+1}月`;
+            
+            const firstDay = new Date(y, m, 1).getDay();
+            const daysInMonth = new Date(y, m+1, 0).getDate();
+            const todayStr = formatDate(new Date()); 
+            const selStr = formatDate(selectedDate);
+
+            for(let i=0; i<firstDay; i++) grid.innerHTML += '<div></div>';
+
+            for(let i=1; i<=daysInMonth; i++) {
+                const date = new Date(y, m, i);
+                const dStr = formatDate(date); 
+                const status = getDayStatus(date);
+                const recs = localData.records.filter(r => r.date === dStr);
+                
+                const el = document.createElement('div');
+                el.className = `bc-day ${dStr===todayStr?'today':''} ${dStr===selStr?'selected':''}`;
+                if(status.type === 'HOLIDAY') el.style.color = '#ef4444';
+                
+                let dotHtml = '';
+                if(status.type === 'HOLIDAY') dotHtml += '<div class="dot holiday"></div>';
+                if(recs.length > 0) dotHtml += '<div class="dot record"></div>';
+                
+                el.innerHTML = `<span>${i}</span><div class="bc-dots">${dotHtml}</div>`;
+                el.onclick = () => window.app.selectDate(date);
+                grid.appendChild(el);
+            }
+        }
+
+        function renderHolidayCalendar() {
+            const grid = document.getElementById('holCalBody');
+            grid.innerHTML = '';
+            const year = holidayCalDate.getFullYear();
+            const month = holidayCalDate.getMonth();
+            document.getElementById('holCalTitle').innerText = `${year}年 ${month+1}月`;
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            for(let i=0; i<firstDay; i++) grid.innerHTML += '<div></div>';
+
+            for(let i=1; i<=daysInMonth; i++) {
+                const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+                const isHol = localData.settings.holidays.some(h => h.date === dateStr);
+                const el = document.createElement('div');
+                el.className = `cal-cell ${isHol?'is-holiday':''}`;
+                el.innerText = i;
+                el.onclick = () => window.app.toggleHoliday(dateStr);
+                grid.appendChild(el);
+            }
+        }
+
+        function renderCharts() {
+            if(pieChart) pieChart.destroy();
+            if(barChart) barChart.destroy();
+
+            const otRecords = localData.records.filter(r => r.type === 'OT');
+            let dist = { work: 0, sat: 0, holiday: 0 };
+            otRecords.forEach(r => {
+                const d = new Date(r.date);
+                const status = getDayStatus(d);
+                const val = parseFloat(r.val);
+                if(status.type === 'HOLIDAY' || d.getDay()===0) dist.holiday += val;
+                else if(d.getDay()===6) dist.sat += val;
+                else dist.work += val;
+            });
+
+            const ctxPie = document.getElementById('pieChart').getContext('2d');
+            pieChart = new Chart(ctxPie, {
+                type: 'doughnut',
+                data: {
+                    labels: ['工作日', '週六', '紅日/週日'],
+                    datasets: [{ data: [dist.work, dist.sat, dist.holiday], backgroundColor: ['#f87171', '#60a5fa', '#fbbf24'] }]
+                },
+                options: { maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+            });
+
+            let monthly = {};
+            otRecords.forEach(r => {
+                const key = r.date.substring(0, 7); 
+                if(!monthly[key]) monthly[key] = 0;
+                monthly[key] += parseFloat(r.val);
+            });
+            const labels = Object.keys(monthly).sort();
+            const data = labels.map(k => monthly[k]);
+
+            const ctxBar = document.getElementById('barChart').getContext('2d');
+            barChart = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{ label: 'OT 時數', data: data, backgroundColor: '#d6c6b9', borderRadius: 6 }]
+                },
+                options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+            });
+        }
+
+        function selectDate(d) {
+            selectedDate = d;
+            if(d.getMonth() !== calViewDate.getMonth()) calViewDate = new Date(d);
+            refreshApp();
+        }
+
+        function renderAllLogs() {
+            const sorted = [...localData.records].sort((a,b) => new Date(b.date) - new Date(a.date));
+            document.getElementById('fullList').innerHTML = sorted.map(renderItem).join('');
+        }
+        function renderItem(r) {
+            const isOT = r.type === 'OT';
+            return `<div class="log-item" onclick="window.appSelectRecord(${r.id})"><div class="log-icon ${isOT?'icon-ot':'icon-leave'}"><i class="fa-solid ${isOT?'fa-clock':'fa-mug-hot'}"></i></div><div class="log-main"><div class="log-title">${isOT?'OT 加班' : (r.subType==='AL'?'年假 (AL)':'病假 (SL)')}</div><div class="log-date">${r.date} ${r.note?'· '+r.note:''}</div></div><div class="log-val">${isOT ? '+'+r.val+'h' : '-'+r.val+'天'}</div></div>`;
+        }
+        window.appSelectRecord = (id) => { const r = localData.records.find(item => item.id === id); if(r) openModal(r); };
+
+        function updateStats() {
+            const s = localData.settings;
+            const now = new Date();
+            const joinD = s.joinDate ? new Date(s.joinDate) : new Date(); 
+            let months = (now.getFullYear() - joinD.getFullYear()) * 12 + (now.getMonth() - joinD.getMonth());
+            if(now.getDate() < joinD.getDate()) months--;
+            const totalSL = Math.max(0, months * 2);
+            const usedSL = localData.records.filter(r=>r.type==='Leave'&&r.subType==='SL').reduce((a,b)=>a+Number(b.val),0);
+            
+            document.getElementById('cardSL_Total').innerText = totalSL;
+            document.getElementById('cardSL_Used').innerText = usedSL;
+            document.getElementById('cardSL_Rem').innerText = totalSL - usedSL;
+            document.getElementById('barSL').style.width = (totalSL>0?(usedSL/totalSL)*100:0)+'%';
+
+            const totalOTHours = localData.records.filter(r=>r.type==='OT').reduce((a,b)=>a+Number(b.val),0);
+            document.getElementById('cardOT_Hours').innerText = totalOTHours.toFixed(1);
+            
+            const dailyHours = s.dailyHours || 8;
+            const earnedCompDays = totalOTHours / dailyHours; 
+            
+            let currentYear = now.getFullYear();
+            if(now.getMonth() < 8) currentYear--; 
+            const startAL = new Date(currentYear, 8, 1); 
+            
+            const vacationRecords = localData.records.filter(r => 
+                r.type==='Leave' && r.subType==='AL' && new Date(r.date) >= startAL
+            );
+            const totalVacationTaken = vacationRecords.reduce((a,b)=>a+Number(b.val),0);
+
+            let usedComp = 0;
+            let usedAL = 0;
+
+            if(totalVacationTaken <= earnedCompDays) {
+                usedComp = totalVacationTaken;
+                usedAL = 0;
+            } else {
+                usedComp = earnedCompDays;
+                usedAL = totalVacationTaken - earnedCompDays;
+            }
+
+            document.getElementById('cardCL_Total').innerText = earnedCompDays.toFixed(1);
+            document.getElementById('cardCL_Used').innerText = usedComp.toFixed(1);
+            document.getElementById('cardCL_Rem').innerText = (earnedCompDays - usedComp).toFixed(1);
+            document.getElementById('barCL').style.width = (earnedCompDays>0?(usedComp/earnedCompDays)*100:0)+'%';
+
+            const totalAL = s.alBalance;
+            document.getElementById('cardAL_Total').innerText = totalAL;
+            document.getElementById('cardAL_Used').innerText = usedAL.toFixed(1);
+            document.getElementById('cardAL_Rem').innerText = (totalAL - usedAL).toFixed(1);
+            document.getElementById('barAL').style.width = (totalAL>0?(usedAL/totalAL)*100:0)+'%';
+        }
+        
+        function openModal(r = null) {
+            document.getElementById('recModal').classList.add('open');
+            const dStr = formatDate(selectedDate); // USE LOCAL
+            document.getElementById('inpDate').value = dStr;
+            window.app.onModalDateChange(dStr); 
+
+            if(r) { 
+                editId=r.id; 
+                document.getElementById('inpDate').value = r.date;
+                document.getElementById('inpNote').value=r.note||''; 
+                const isHoliday = localData.settings.holidays.some(h=>h.date===r.date);
+                document.getElementById('chkIsHoliday').checked = isHoliday;
+                setType(r.type); 
+                if(r.type==='OT') document.getElementById('inpHours').value=r.val; 
+                else{ document.getElementById('inpLeaveType').value=r.subType; document.getElementById('inpDays').value=r.val; } 
+                document.getElementById('btnDel').style.display='block'; 
+                window.app.onModalDateChange(r.date);
+            } else { 
+                editId=null; 
+                document.getElementById('recForm').reset(); 
+                document.getElementById('inpDate').value = dStr;
+                const isHoliday = localData.settings.holidays.some(h=>h.date===dStr);
+                document.getElementById('chkIsHoliday').checked = isHoliday;
+                setType('OT'); 
+                document.getElementById('btnDel').style.display='none';
+                window.app.onModalDateChange(dStr);
+            }
+        }
+        
+        function setType(t) { curType = t; document.getElementById('recType').value = t; document.getElementById('secOT').style.display = t==='OT'?'block':'none'; document.getElementById('secLeave').style.display = t==='Leave'?'block':'none'; }
+        
+        function calcOT() {
+            const i=document.getElementById('inpIn').value;
+            const o=document.getElementById('inpOut').value;
+            if(!i||!o) return;
+            const mi = i.split(':').reduce((h,m)=>h*60+Number(m),0);
+            const mo = o.split(':').reduce((h,m)=>h*60+Number(m),0);
+            const stdHours = Number(document.getElementById('inpStdVal').value);
+            let durationMins = mo - mi;
+            if(durationMins < 0) durationMins += 24*60; 
+            const otMins = Math.max(0, durationMins - (stdHours * 60));
+            document.getElementById('inpHours').value = (otMins / 60).toFixed(1);
+            document.getElementById('otMsg').innerText = `總工時 ${(durationMins/60).toFixed(1)}h - 扣除 ${stdHours}h`;
+        }
+        
+        async function saveRecord(e) {
+            e.preventDefault();
+            if(!isDataLoaded) return alert("資料尚未同步，請稍後");
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalText = btn.innerText;
+            btn.innerText = "⏳..."; btn.disabled = true;
+            try {
+                const dateVal = document.getElementById('inpDate').value;
+                if(!dateVal) throw new Error("請選擇日期");
+
+                const isHolidayCheck = document.getElementById('chkIsHoliday').checked;
+                const holIndex = localData.settings.holidays.findIndex(h=>h.date===dateVal);
+                if(isHolidayCheck) {
+                    if(holIndex === -1) localData.settings.holidays.push({date: dateVal, name: "自訂假期"});
+                } else {
+                    if(holIndex !== -1) localData.settings.holidays.splice(holIndex, 1);
+                }
+
+                const val = curType==='OT' ? document.getElementById('inpHours').value : document.getElementById('inpDays').value;
+                if(!val) throw new Error("請輸入數值");
+                
+                const rec = { id: editId||Date.now(), date: dateVal, type: curType, subType: curType==='Leave'?document.getElementById('inpLeaveType').value:null, val: val, note: document.getElementById('inpNote').value };
+                
+                if(editId) localData.records = localData.records.filter(r=>r.id!==editId);
+                localData.records.push(rec); 
+                
+                await pushToCloud(); 
+                alert("✅ 成功！"); 
+                window.app.closeModal();
+                
+                const [y, m, d] = dateVal.split('-');
+                if(new Date(y, m-1, 1).getMonth() !== calViewDate.getMonth()) calViewDate = new Date(y, m-1, 1);
+                window.app.selectDate(new Date(y, m-1, d));
+
+            } catch(err) { alert("❌ " + err.message); }
+            finally { btn.innerText = originalText; btn.disabled = false; }
+        }
+        
+        async function delRecord(btn) { 
+            if(editId && confirm("刪除此紀錄？")) { 
+                try { localData.records = localData.records.filter(r=>r.id!==editId); await pushToCloud(); window.app.closeModal(); } 
+                catch(e){ alert("刪除失敗"); }
+            } 
+        }
+        
+        setTimeout(()=> {
+            refreshApp();
+        }, 500);
+    </script>
+</body>
+</html>
