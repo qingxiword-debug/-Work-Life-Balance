@@ -3,54 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Work-Life Balance</title>
+    <title>Work-Life Balance v2.9</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-body: #fdfcf8; --surface: #ffffff;
-            --primary: #8c7b70; --primary-dark: #5e5046;
-            --text-main: #4a403a; --text-sub: #998f8a; --line: #eeeae5;
-            --tag-ot: #f2ebe6; --tag-ot-text: #6e5d53;
-            --tag-off: #e6f0e6; --tag-off-text: #5d7a5f;
-            --radius: 18px; --shadow: 0 4px 20px rgba(140, 123, 112, 0.06);
-            --red-dot: #e11d48;
+            /* Palette: Gentle Milk Tea */
+            --bg-body: #fbf9f6; 
+            --surface: #ffffff;
+            --primary: #a89080; 
+            --primary-dark: #6d5b50;
+            --text-main: #4a403a; 
+            --text-sub: #9e948d; 
+            --line: #f0ebe5;
+            
+            --tag-ot: #f5f0eb; --tag-ot-text: #8c7b70;
+            --tag-off: #edf2ed; --tag-off-text: #6b8c6e;
+            
+            --radius: 20px; 
+            --shadow: 0 4px 24px rgba(168, 144, 128, 0.08);
+            
+            /* Card Colors (Subtle) */
+            --card-sl-bg: #fff0f0; --card-sl-icon: #e17070;
+            --card-al-bg: #eaf6f6; --card-al-icon: #5daaaa;
+            --card-ot-bg: #fff6e6; --card-ot-icon: #e6a23c;
+            --card-cl-bg: #f3eefc; --card-cl-icon: #9b7fe6;
         }
+
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
         body { font-family: "Hiragino Sans", "PingFang TC", sans-serif; background-color: var(--bg-body); color: var(--text-main); margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        header { padding: 15px 20px; padding-top: max(15px, env(safe-area-inset-top)); display: flex; justify-content: space-between; align-items: center; background: var(--bg-body); }
-        h1 { margin: 0; font-size: 1.2rem; font-weight: 800; color: var(--primary-dark); letter-spacing: 0.5px; display:flex; align-items:center; gap:8px;}
+        /* Header */
+        header { padding: 15px 24px; padding-top: max(15px, env(safe-area-inset-top)); display: flex; justify-content: space-between; align-items: center; background: var(--bg-body); z-index:10; }
+        h1 { margin: 0; font-size: 1.3rem; font-weight: 800; color: var(--primary-dark); letter-spacing: 0.5px; display:flex; align-items:center; gap:8px;}
         .ver-tag { font-size:0.7rem; background:#eee; padding:2px 6px; border-radius:6px; color:#888; font-weight:normal;}
         .status-dot { width:8px; height:8px; border-radius:50%; background:#ccc; transition:0.3s; }
         .status-dot.online { background:#22c55e; box-shadow:0 0 5px #22c55e; }
         .status-dot.offline { background:#ef4444; }
+        .btn-icon { background: none; border: none; font-size: 1.2rem; color: var(--primary); cursor: pointer; padding: 5px; }
 
-        .header-actions { display: flex; gap: 15px; align-items: center; }
-        .btn-icon { background: none; border: none; font-size: 1.2rem; color: var(--primary); cursor: pointer; padding: 5px; position: relative; }
-        #dateJumper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+        /* Main Scroll Area */
+        main { flex: 1; overflow-y: auto; padding: 0 20px 100px 20px; }
 
-        /* Scroller */
-        .date-scroller-wrap { padding: 5px 0 15px 0; background: var(--bg-body); }
-        .date-scroller { display: flex; overflow-x: auto; gap: 8px; padding: 0 24px; scrollbar-width: none; }
-        .date-scroller::-webkit-scrollbar { display: none; }
-        .date-chip { min-width: 52px; height: 68px; background: var(--surface); border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-sub); flex-shrink: 0; cursor: pointer; transition: 0.2s; border: 1px solid var(--line); position: relative; }
-        .date-chip.active { background: var(--primary); color: white; border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(140, 123, 112, 0.3); }
-        .date-chip.is-holiday { border-color: #fca5a5; background: #fff1f2; color: #e11d48; }
-        .date-chip.active.is-holiday { background: var(--primary); border-color: transparent; color: white; }
-        .has-data-dot { width:5px; height:5px; background:var(--primary); border-radius:50%; position:absolute; bottom:5px; display:none;}
-        .date-chip.has-data .has-data-dot { display:block; }
-        .date-chip.active .has-data-dot { background:white; }
+        /* --- BIG CALENDAR (Home) --- */
+        .big-cal-wrapper { background: var(--surface); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); margin-bottom: 20px; }
+        .bc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .bc-title { font-weight: 800; font-size: 1.1rem; color: var(--primary-dark); }
+        .bc-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; text-align: center; }
+        .bc-head { font-size: 0.75rem; color: var(--text-sub); margin-bottom: 5px; font-weight: 600; }
+        .bc-day { 
+            aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            border-radius: 12px; font-size: 0.95rem; cursor: pointer; position: relative; transition: 0.2s; color: var(--text-main);
+        }
+        .bc-day.other-month { color: #e0e0e0; pointer-events: none; }
+        .bc-day.today { background: var(--primary); color: white; box-shadow: 0 4px 10px rgba(168,144,128,0.4); }
+        .bc-day.selected { border: 2px solid var(--primary); }
+        
+        /* Dots in Calendar */
+        .bc-dots { display: flex; gap: 3px; position: absolute; bottom: 6px; }
+        .dot { width: 4px; height: 4px; border-radius: 50%; }
+        .dot.holiday { background-color: #ef4444; }
+        .dot.record { background-color: #8c7b70; }
+        .bc-day.today .dot { background-color: white; }
 
-        main { flex: 1; overflow-y: auto; padding: 0 24px 100px 24px; }
-        .card { background: var(--surface); border-radius: var(--radius); padding: 22px; margin-bottom: 16px; box-shadow: var(--shadow); border: 1px solid var(--line); }
-        .summary-card { background: linear-gradient(135deg, #b0a096 0%, #8c7b70 100%); color: white; border: none; }
-        .stat-row { display: flex; justify-content: space-between; align-items: flex-end; }
-        .stat-big { font-size: 2.4rem; font-weight: 700; line-height: 1; margin: 5px 0; }
-        .stat-lbl { font-size: 0.8rem; opacity: 0.9; font-weight: 500;}
+        /* --- STATS GRID (Dashboard) --- */
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: var(--surface); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); display: flex; flex-direction: column; justify-content: space-between; height: 140px; position: relative; overflow: hidden; }
+        
+        .sc-icon-box { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; margin-bottom: 10px; }
+        .sc-title { font-size: 0.85rem; font-weight: 700; color: var(--text-main); }
+        .sc-val-row { display: flex; align-items: baseline; gap: 4px; margin-top: auto; }
+        .sc-val { font-size: 1.6rem; font-weight: 800; color: var(--text-main); }
+        .sc-unit { font-size: 0.8rem; color: var(--text-sub); }
+        
+        .progress-container { margin-top: 8px; height: 4px; background: #f0f0f0; border-radius: 2px; width: 100%; overflow: hidden; }
+        .progress-bar { height: 100%; border-radius: 2px; }
+        .sc-sub { font-size: 0.7rem; color: var(--text-sub); margin-top: 4px; display: flex; justify-content: space-between; }
 
-        /* List Items */
-        .log-item { display: flex; align-items: center; padding: 14px; background: var(--surface); border-radius: 16px; margin-bottom: 10px; border: 1px solid var(--line); }
+        /* Colors for Cards */
+        .card-sl .sc-icon-box { background: var(--card-sl-bg); color: var(--card-sl-icon); }
+        .card-sl .progress-bar { background: var(--card-sl-icon); }
+        .card-al .sc-icon-box { background: var(--card-al-bg); color: var(--card-al-icon); }
+        .card-al .progress-bar { background: var(--card-al-icon); }
+        .card-ot .sc-icon-box { background: var(--card-ot-bg); color: var(--card-ot-icon); }
+        .card-cl .sc-icon-box { background: var(--card-cl-bg); color: var(--card-cl-icon); }
+        .card-cl .progress-bar { background: var(--card-cl-icon); }
+
+        /* Daily List */
+        .day-header { display: flex; justify-content: space-between; align-items: baseline; margin: 0 5px 10px 5px; }
+        .dh-title { font-size: 1rem; font-weight: 700; color: var(--primary-dark); }
+        .dh-badge { font-size: 0.75rem; padding: 3px 8px; border-radius: 6px; }
+        .badge-work { background: #fff7ed; color: #c2410c; }
+        .badge-off { background: #f0fdf4; color: #15803d; }
+        .badge-hol { background: #fef2f2; color: #b91c1c; }
+
+        .log-item { display: flex; align-items: center; padding: 14px; background: var(--surface); border-radius: 16px; margin-bottom: 10px; border: 1px solid var(--line); box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
         .log-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-right: 12px; font-size: 1rem; }
         .icon-ot { background: var(--tag-ot); color: var(--tag-ot-text); }
         .icon-leave { background: var(--tag-off); color: var(--tag-off-text); }
@@ -59,50 +105,36 @@
         .log-date { font-size: 0.75rem; color: var(--text-sub); margin-top: 2px; }
         .log-val { font-weight: 700; color: var(--primary-dark); font-size: 1rem;}
 
-        /* Chart Section */
-        .chart-container { position: relative; height: 250px; width: 100%; margin-bottom: 20px; }
-        h4 { margin: 20px 0 10px 0; color: var(--text-main); font-size: 1rem; }
-
-        /* Holiday Calendar (Apple Style) */
-        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 0 5px; }
-        .cal-title { font-weight: 700; font-size: 1rem; }
-        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
-        .cal-head { font-size: 0.75rem; color: var(--text-sub); margin-bottom: 5px; }
-        .cal-cell { 
-            aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            border-radius: 50%; font-size: 0.9rem; cursor: pointer; transition: 0.2s; position: relative;
-        }
-        .cal-cell:hover { background: #f3f4f6; }
-        .cal-cell.is-holiday { background: #fee2e2; color: #b91c1c; font-weight: bold; }
-        .cal-cell.is-holiday::after { content:''; position:absolute; bottom:4px; width:4px; height:4px; border-radius:50%; background:#b91c1c; }
-        .cal-cell.today { border: 1px solid var(--primary); color: var(--primary); }
-        .cal-nav-btn { background:none; border:none; color:var(--primary); font-size:1.2rem; cursor:pointer; }
-
-        /* UI Elements */
-        .toggle-group { display:flex; gap:10px; margin-bottom:10px; }
-        .toggle-opt { flex:1; padding:12px; border:2px solid var(--line); border-radius:12px; background:#fff; color:var(--text-sub); font-size:0.9rem; font-weight:600; text-align:center; cursor:pointer; }
-        .toggle-opt.active { border-color:var(--primary); color:var(--primary-dark); background:#fdfbf9; }
-
+        /* Modal & Forms */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(74, 64, 58, 0.5); backdrop-filter: blur(4px); z-index: 100; opacity: 0; pointer-events: none; transition: 0.3s; display: flex; align-items: flex-end; }
+        .modal-overlay.open { opacity: 1; pointer-events: auto; }
+        .modal-card { background: var(--surface); width: 100%; border-radius: 30px 30px 0 0; padding: 30px 24px 50px 24px; transform: translateY(100%); transition: 0.4s cubic-bezier(0.19, 1, 0.22, 1); max-height: 90vh; overflow-y: auto; }
+        
         .form-label { font-size: 0.85rem; font-weight: 700; color: var(--text-sub); margin: 15px 0 8px 0; display: block; }
         .form-input { width: 100%; padding: 14px; border: 2px solid var(--line); background: #faf9f7; border-radius: 14px; font-size: 1rem; color: var(--text-main); -webkit-appearance: none; }
         .btn { width: 100%; padding: 15px; border-radius: 14px; border: none; font-weight: 700; font-size: 1rem; margin-top: 20px; cursor: pointer; transition: 0.2s; }
         .btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .btn-primary { background: var(--primary-dark); color: white; box-shadow: 0 4px 12px rgba(94, 80, 70, 0.2); }
         .btn-outline { background: transparent; border: 2px solid #ef4444; color: #ef4444; margin-top: 10px; }
-        
+
         .std-hours-group { display: flex; gap: 8px; margin-bottom: 15px; }
         .std-btn { flex: 1; padding: 10px 0; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--text-sub); cursor: pointer; font-size: 0.85rem; transition: 0.2s; text-align: center;}
         .std-btn.active { border-color: var(--primary); background: var(--primary); color: white; }
 
-        .modal-overlay { position: fixed; inset: 0; background: rgba(74, 64, 58, 0.5); backdrop-filter: blur(4px); z-index: 100; opacity: 0; pointer-events: none; transition: 0.3s; display: flex; align-items: flex-end; }
-        .modal-overlay.open { opacity: 1; pointer-events: auto; }
-        .modal-card { background: var(--surface); width: 100%; border-radius: 30px 30px 0 0; padding: 30px 24px 50px 24px; transform: translateY(100%); transition: 0.4s cubic-bezier(0.19, 1, 0.22, 1); max-height: 90vh; overflow-y: auto; }
-        .modal-overlay.open .modal-card { transform: translateY(0); }
+        /* Nav & FAB */
         .fab { position: fixed; bottom: 90px; right: 24px; width: 58px; height: 58px; border-radius: 20px; background: var(--primary-dark); color: #fff; border: none; font-size: 1.5rem; box-shadow: 0 10px 25px rgba(94, 80, 70, 0.3); display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 50; }
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); padding: 12px 0 24px 0; display: flex; justify-content: space-around; border-top: 1px solid var(--line); z-index: 60; }
         .nav-btn { background: none; border: none; color: #ccc; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 0.7rem; font-weight: 600; cursor: pointer;}
         .nav-btn.active { color: var(--primary-dark); }
         .nav-btn i { font-size: 1.4rem; }
+
+        /* Settings specific */
+        .holiday-list { max-height: 150px; overflow-y: auto; background: #faf9f7; border-radius: 12px; padding: 10px; border: 1px solid var(--line); }
+        .holiday-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+        .toggle-group { display:flex; gap:10px; }
+        .toggle-opt { flex:1; padding:12px; border:2px solid var(--line); border-radius:12px; background:#fff; color:var(--text-sub); font-size:0.9rem; font-weight:600; text-align:center; cursor:pointer; }
+        .toggle-opt.active { border-color:var(--primary); color:var(--primary-dark); background:#fdfbf9; }
+
         .tab-content { display: none; }
         .tab-content.active { display: block; animation: fadeUp 0.3s; }
         @keyframes fadeUp { from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)} }
@@ -113,61 +145,84 @@
 
     <div id="loadingMask">
         <i class="fa-solid fa-cloud fa-bounce" style="font-size:3rem"></i>
-        <span>連線中...</span>
+        <span>同步私人資料庫...</span>
     </div>
 
     <header>
-        <h1>WLB <span class="ver-tag">v2.8</span> <div class="status-dot" id="statusDot"></div></h1>
+        <h1>WLB <span class="ver-tag">v2.9</span> <div class="status-dot" id="statusDot"></div></h1>
         <div class="header-actions">
-            <button class="btn-icon">
-                <i class="fa-solid fa-calendar-days"></i>
-                <input type="month" id="dateJumper" onchange="window.app.jumpToDate(this.value)">
-            </button>
             <button class="btn-icon" onclick="window.app.openSettings()"><i class="fa-solid fa-gear"></i></button>
         </div>
     </header>
 
-    <div class="date-scroller-wrap">
-        <div class="date-scroller" id="dateScroller"></div>
-    </div>
-
     <main>
         <div id="tab-home" class="tab-content active">
-            <div class="card summary-card">
-                <div class="stat-row">
-                    <div>
-                        <div class="stat-lbl">OT 累積</div>
-                        <div class="stat-big" id="dispOT">--</div>
-                        <div class="stat-lbl" style="opacity:0.9">≈ <span id="dispOTDays">--</span> 天補休</div>
-                    </div>
-                    <div style="text-align:right">
-                        <div class="stat-lbl">病假餘額</div>
-                        <div class="stat-big" style="font-size:2rem" id="dispSL">--</div>
-                        <div class="stat-lbl">年假: <span id="dispAL">--</span></div>
-                    </div>
+            
+            <div class="big-cal-wrapper">
+                <div class="bc-header">
+                    <button class="btn-icon" onclick="window.app.navMonth(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+                    <div class="bc-title" id="bcTitle"></div>
+                    <button class="btn-icon" onclick="window.app.navMonth(1)"><i class="fa-solid fa-chevron-right"></i></button>
                 </div>
+                <div class="bc-grid">
+                    <div class="bc-head">日</div><div class="bc-head">一</div><div class="bc-head">二</div><div class="bc-head">三</div><div class="bc-head">四</div><div class="bc-head">五</div><div class="bc-head">六</div>
+                </div>
+                <div class="bc-grid" id="bcBody"></div>
             </div>
-            <h3 style="margin:0 0 12px 0; font-size:1rem; color:var(--text-sub); display:flex; justify-content:space-between; align-items:center;">
-                <span>當日概覽</span>
-                <span id="dateTitleLabel" style="font-weight:400; font-size:0.85rem;"></span>
-            </h3>
+
+            <div class="day-header">
+                <div class="dh-title" id="dateTitleLabel"></div>
+                <div id="dateStatusBadge"></div>
+            </div>
             <div id="dayRecords"></div>
         </div>
 
         <div id="tab-stats" class="tab-content">
-            <h3>數據分析</h3>
-            <div class="card">
-                <h4>OT 時段分佈</h4>
-                <div class="chart-container">
-                    <canvas id="pieChart"></canvas>
+            <h3 style="margin-bottom:15px">數據概覽</h3>
+            <div class="stats-grid">
+                <div class="stat-card card-sl">
+                    <div class="sc-icon-box"><i class="fa-solid fa-notes-medical"></i></div>
+                    <div class="sc-title">病假 (Sick Leave)</div>
+                    <div class="sc-val-row">
+                        <span class="sc-val" id="cardSL_Rem">--</span><span class="sc-unit">天</span>
+                    </div>
+                    <div>
+                        <div class="progress-container"><div class="progress-bar" id="barSL" style="width:0%"></div></div>
+                        <div class="sc-sub"><span>已用 <span id="cardSL_Used">0</span></span><span>累積 <span id="cardSL_Total">0</span></span></div>
+                    </div>
+                </div>
+                <div class="stat-card card-al">
+                    <div class="sc-icon-box"><i class="fa-solid fa-umbrella-beach"></i></div>
+                    <div class="sc-title">年假 (Annual)</div>
+                    <div class="sc-val-row">
+                        <span class="sc-val" id="cardAL_Rem">--</span><span class="sc-unit">天</span>
+                    </div>
+                    <div>
+                        <div class="progress-container"><div class="progress-bar" id="barAL" style="width:0%"></div></div>
+                        <div class="sc-sub"><span>已用 <span id="cardAL_Used">0</span></span><span>年額 <span id="cardAL_Total">0</span></span></div>
+                    </div>
+                </div>
+                <div class="stat-card card-ot">
+                    <div class="sc-icon-box"><i class="fa-solid fa-briefcase"></i></div>
+                    <div class="sc-title">OT 時數</div>
+                    <div class="sc-val-row">
+                        <span class="sc-val" id="cardOT_Hours">--</span><span class="sc-unit">h</span>
+                    </div>
+                    <div class="sc-sub" style="margin-top:10px">累計加班總時數</div>
+                </div>
+                <div class="stat-card card-cl">
+                    <div class="sc-icon-box"><i class="fa-solid fa-calendar-check"></i></div>
+                    <div class="sc-title">OT 補假</div>
+                    <div class="sc-val-row">
+                        <span class="sc-val" id="cardCL_Rem">--</span><span class="sc-unit">天</span>
+                    </div>
+                    <div>
+                        <div class="progress-container"><div class="progress-bar" id="barCL" style="width:0%"></div></div>
+                        <div class="sc-sub"><span>已抵扣 <span id="cardCL_Used">0</span></span><span>可換 <span id="cardCL_Total">0</span></span></div>
+                    </div>
                 </div>
             </div>
-            <div class="card">
-                <h4>每月 OT 趨勢</h4>
-                <div class="chart-container">
-                    <canvas id="barChart"></canvas>
-                </div>
-            </div>
+            <p style="font-size:0.75rem; color:var(--text-sub); text-align:center;">* 系統優先扣除 OT 補假，不足時才扣年假 (9/1 重置)</p>
         </div>
 
         <div id="tab-logs" class="tab-content">
@@ -179,46 +234,35 @@
     <button class="fab" onclick="window.app.triggerAdd()"><i class="fa-solid fa-plus"></i></button>
 
     <nav class="bottom-nav">
-        <button class="nav-btn active" onclick="window.app.switchTab('home')" id="nav-home"><i class="fa-solid fa-calendar-week"></i> 日程</button>
-        <button class="nav-btn" onclick="window.app.switchTab('stats')" id="nav-stats"><i class="fa-solid fa-chart-pie"></i> 統計</button>
-        <button class="nav-btn" onclick="window.app.switchTab('logs')" id="nav-logs"><i class="fa-solid fa-clock-rotate-left"></i> 紀錄</button>
+        <button class="nav-btn active" onclick="window.app.switchTab('home')" id="nav-home"><i class="fa-solid fa-calendar-days"></i> 日程</button>
+        <button class="nav-btn" onclick="window.app.switchTab('stats')" id="nav-stats"><i class="fa-solid fa-chart-simple"></i> 統計</button>
+        <button class="nav-btn" onclick="window.app.switchTab('logs')" id="nav-logs"><i class="fa-solid fa-list"></i> 紀錄</button>
     </nav>
 
     <div class="modal-overlay" id="setModal" onclick="if(event.target===this) document.getElementById('setModal').classList.remove('open')">
         <div class="modal-card">
             <h3 style="margin-top:0">設定</h3>
-            
             <label class="form-label">工作模式</label>
             <div class="toggle-group">
-                <div class="toggle-opt" id="modeMonFri" onclick="window.app.setWorkMode('mon_fri')">一至五<br><span style="font-size:0.7rem; font-weight:normal">週六休假</span></div>
-                <div class="toggle-opt" id="modeAltSat" onclick="window.app.setWorkMode('alt_sat')">長短週<br><span style="font-size:0.7rem; font-weight:normal">隔週輪值</span></div>
+                <div class="toggle-opt" id="modeMonFri" onclick="window.app.setWorkMode('mon_fri')">一至五</div>
+                <div class="toggle-opt" id="modeAltSat" onclick="window.app.setWorkMode('alt_sat')">長短週</div>
             </div>
             <div id="satSetting" style="display:none; margin-top:10px;">
                 <label class="form-label">長短週基準日 (上班的週六)</label>
                 <input type="date" class="form-input" id="setBaseSat">
             </div>
-
-            <label class="form-label">假期管理 (點擊日期設定)</label>
-            <div style="background:#faf9f7; padding:15px; border-radius:16px; border:1px solid var(--line);">
-                <div class="cal-header">
-                    <button class="cal-nav-btn" onclick="window.app.navHolidayMonth(-1)"><i class="fa-solid fa-chevron-left"></i></button>
-                    <span class="cal-title" id="holCalTitle"></span>
-                    <button class="cal-nav-btn" onclick="window.app.navHolidayMonth(1)"><i class="fa-solid fa-chevron-right"></i></button>
-                </div>
-                <div class="cal-grid">
-                    <div class="cal-head">日</div><div class="cal-head">一</div><div class="cal-head">二</div><div class="cal-head">三</div><div class="cal-head">四</div><div class="cal-head">五</div><div class="cal-head">六</div>
-                </div>
-                <div class="cal-grid" id="holCalBody"></div>
-                <p style="text-align:center; font-size:0.75rem; color:var(--text-sub); margin-top:10px;">🔴 紅色代表已設定為假期</p>
+            
+            <label class="form-label">假期設定 (點擊紅日管理)</label>
+            <div style="background:#faf9f7; padding:10px; border-radius:12px; border:1px solid var(--line); margin-bottom:15px; text-align:center;">
+                <i class="fa-solid fa-calendar-xmark" style="color:var(--primary)"></i> 
+                <span style="font-size:0.9rem; margin-left:5px" onclick="alert('請直接在首頁日曆點擊日期來設定假期')">請在首頁日曆點擊設定</span>
             </div>
-
-            <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
 
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
-                <div><label class="form-label">年假剩餘</label><input type="number" class="form-input" id="setAL"></div>
-                <div><label class="form-label">日工時</label><input type="number" class="form-input" id="setDaily"></div>
+                <div><label class="form-label">年假額度 (每年)</label><input type="number" class="form-input" id="setAL"></div>
+                <div><label class="form-label">日工時 (換算用)</label><input type="number" class="form-input" id="setDaily"></div>
             </div>
-            <label class="form-label">入職日期</label>
+            <label class="form-label">入職日期 (計算病假)</label>
             <input type="date" class="form-input" id="setJoinDate">
             
             <button class="btn btn-primary" onclick="window.app.saveSettings(this)">儲存設定</button>
@@ -240,7 +284,7 @@
                 </div>
                 
                 <div id="secOT">
-                    <label class="form-label">當日扣除工時 (小時)</label>
+                    <label class="form-label">扣除工時</label>
                     <div class="std-hours-group">
                         <button type="button" class="std-btn active" id="btnStd9" onclick="window.app.setStdHours(9)">9h</button>
                         <button type="button" class="std-btn" id="btnStd8" onclick="window.app.setStdHours(8)">8h</button>
@@ -259,10 +303,17 @@
 
                 <div id="secLeave" style="display:none;">
                     <label class="form-label">假別</label>
-                    <select class="form-input" id="inpLeaveType"><option value="SL">病假 (SL)</option><option value="AL">年假 (AL)</option></select>
+                    <select class="form-input" id="inpLeaveType"><option value="AL">年假/補假 (AL)</option><option value="SL">病假 (SL)</option></select>
                     <label class="form-label">天數</label><input type="number" step="0.5" class="form-input" id="inpDays" value="1">
+                    <p style="font-size:0.75rem; color:var(--text-sub); margin-top:5px">系統將優先扣除 OT 補假，不足時扣年假。</p>
                 </div>
                 <label class="form-label">備註</label><input type="text" class="form-input" id="inpNote">
+                
+                <div style="margin-top:20px; display:flex; align-items:center; gap:10px;">
+                    <input type="checkbox" id="chkIsHoliday" style="width:20px; height:20px;">
+                    <label for="chkIsHoliday" style="font-size:0.9rem; color:var(--text-main)">設為假期 (紅日)</label>
+                </div>
+
                 <button type="submit" class="btn btn-primary">儲存</button>
                 <button type="button" class="btn btn-outline" style="display:none;" id="btnDel" onclick="window.app.delRecord(this)">刪除</button>
             </form>
@@ -287,7 +338,6 @@
         const db = getFirestore(app);
         const docRef = doc(db, "worklife_app", "personal_data_v2");
 
-        // 內建完整假期 (2025-2026)
         const PRESET_HOLIDAYS = [
             {date:"2025-01-01",name:"元旦"},{date:"2025-01-29",name:"農曆年初一"},{date:"2025-01-30",name:"農曆年初二"},{date:"2025-01-31",name:"農曆年初三"},{date:"2025-04-04",name:"清明節"},{date:"2025-04-18",name:"耶穌受難節"},{date:"2025-04-19",name:"耶穌受難節翌日"},{date:"2025-04-21",name:"復活節星期一"},{date:"2025-05-01",name:"勞動節"},{date:"2025-05-05",name:"佛誕"},{date:"2025-05-31",name:"端午節"},{date:"2025-07-01",name:"香港特別行政區成立紀念日"},{date:"2025-10-01",name:"國慶日"},{date:"2025-10-07",name:"中秋節翌日"},{date:"2025-10-29",name:"重陽節"},{date:"2025-12-25",name:"聖誕節"},{date:"2025-12-26",name:"聖誕節後第一個周日"},
             {date:"2026-01-01",name:"元旦"},{date:"2026-02-17",name:"農曆年初一"},{date:"2026-02-18",name:"農曆年初二"},{date:"2026-02-19",name:"農曆年初三"},{date:"2026-04-03",name:"耶穌受難節"},{date:"2026-04-04",name:"耶穌受難節翌日"},{date:"2026-04-06",name:"清明節翌日"},{date:"2026-04-07",name:"復活節星期一翌日"},{date:"2026-05-01",name:"勞動節"},{date:"2026-05-25",name:"佛誕翌日"},{date:"2026-06-19",name:"端午節"},{date:"2026-07-01",name:"香港特別行政區成立紀念日"},{date:"2026-09-26",name:"中秋節翌日"},{date:"2026-10-01",name:"國慶日"},{date:"2026-10-19",name:"重陽節翌日"},{date:"2026-12-25",name:"聖誕節"},{date:"2026-12-26",name:"聖誕節後第一個周日"}
@@ -301,11 +351,9 @@
             }
         };
         let selectedDate = new Date();
-        let currentViewDate = new Date(); 
-        let holidayCalDate = new Date(); // Separate state for settings calendar
+        let calViewDate = new Date(); // For Big Calendar Month View
         let curType = 'OT';
         let editId = null;
-        let pieChart = null, barChart = null;
 
         onSnapshot(docRef, (docSnap) => {
             const loading = document.getElementById('loadingMask');
@@ -313,20 +361,15 @@
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 if(!data.settings.workMode) data.settings.workMode = 'alt_sat';
-                // Data Migration
                 if(data.settings.holidays.length && typeof data.settings.holidays[0] === 'string') {
-                    data.settings.holidays = PRESET_HOLIDAYS; // Upgrade old data
+                    data.settings.holidays = PRESET_HOLIDAYS;
                 }
                 localData = data;
                 dot.className = 'status-dot online';
                 refreshApp();
             } else { setDoc(docRef, localData); dot.className = 'status-dot online'; }
             if(loading) { loading.style.opacity = '0'; setTimeout(()=>loading.style.display='none', 500); }
-        }, (err) => {
-            document.getElementById('statusDot').className = 'status-dot offline';
-            document.getElementById('loadingMask').style.display='none';
-            console.error(err);
-        });
+        }, (err) => { document.getElementById('statusDot').className = 'status-dot offline'; document.getElementById('loadingMask').style.display='none'; });
 
         window.app = {
             openSettings: () => {
@@ -337,8 +380,6 @@
                 document.getElementById('setJoinDate').value = s.joinDate || '';
                 document.getElementById('setAL').value = s.alBalance;
                 document.getElementById('setDaily').value = s.dailyHours;
-                holidayCalDate = new Date(); // Reset cal to today
-                renderHolidayCalendar();
             },
             setWorkMode: (mode) => {
                 localData.settings.workMode = mode;
@@ -362,25 +403,6 @@
                 finally { btn.innerText = originalText; btn.disabled = false; }
             },
             
-            // Visual Holiday Calendar Logic
-            navHolidayMonth: (d) => {
-                holidayCalDate.setMonth(holidayCalDate.getMonth() + d);
-                renderHolidayCalendar();
-            },
-            toggleHoliday: (dStr) => {
-                const exists = localData.settings.holidays.find(h => h.date === dStr);
-                if(exists) {
-                    if(confirm(`移除 ${dStr} (${exists.name}) 假期？`)) {
-                        localData.settings.holidays = localData.settings.holidays.filter(h => h.date !== dStr);
-                    }
-                } else {
-                    const name = prompt(`將 ${dStr} 設為假期，請輸入名稱：`, "休假");
-                    if(name) localData.settings.holidays.push({date: dStr, name: name});
-                }
-                renderHolidayCalendar();
-            },
-            clearHolidays: () => { if(confirm("確定清空所有假期？")) { localData.settings.holidays=[]; renderHolidayCalendar(); } },
-
             triggerAdd: () => openModal(),
             closeModal: () => document.getElementById('recModal').classList.remove('open'),
             switchTab: (t) => {
@@ -388,7 +410,7 @@
                 document.querySelectorAll('.nav-btn').forEach(e=>e.classList.remove('active'));
                 document.getElementById(`tab-${t}`).classList.add('active');
                 document.getElementById(`nav-${t}`).classList.add('active');
-                if(t === 'stats') renderCharts();
+                if(t==='stats') updateStats();
             },
             setType: (t) => setType(t), 
             setStdHours: (h) => {
@@ -398,15 +420,14 @@
                 window.app.calcOT();
             },
             calcOT: () => calcOT(), 
-            saveRecord: (e) => saveRecord(e), delRecord: (b) => delRecord(b), selectDate: (d) => selectDate(d),
+            saveRecord: (e) => saveRecord(e), delRecord: (b) => delRecord(b), 
             
-            jumpToDate: (val) => {
-                if(!val) return;
-                const [y, m] = val.split('-');
-                currentViewDate = new Date(y, m - 1, 15);
-                generateScroller();
-                window.app.selectDate(new Date(y, m - 1, 1));
+            // Big Calendar Logic
+            navMonth: (dir) => {
+                calViewDate.setMonth(calViewDate.getMonth() + dir);
+                renderBigCalendar();
             },
+            selectDate: (d) => selectDate(d),
             onModalDateChange: (val) => {
                 if(!val) return;
                 const d = new Date(val);
@@ -417,90 +438,6 @@
                 window.app.setStdHours(defaultStd);
             }
         };
-
-        // Render Apple-style Calendar in Settings
-        function renderHolidayCalendar() {
-            const grid = document.getElementById('holCalBody');
-            grid.innerHTML = '';
-            const year = holidayCalDate.getFullYear();
-            const month = holidayCalDate.getMonth();
-            document.getElementById('holCalTitle').innerText = `${year}年 ${month+1}月`;
-
-            const firstDay = new Date(year, month, 1).getDay();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const todayStr = new Date().toISOString().split('T')[0];
-
-            for(let i=0; i<firstDay; i++) grid.innerHTML += '<div></div>';
-
-            for(let i=1; i<=daysInMonth; i++) {
-                const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-                const isHol = localData.settings.holidays.some(h => h.date === dateStr);
-                const isToday = dateStr === todayStr;
-                
-                const el = document.createElement('div');
-                el.className = `cal-cell ${isHol?'is-holiday':''} ${isToday?'today':''}`;
-                el.innerText = i;
-                el.onclick = () => window.app.toggleHoliday(dateStr);
-                grid.appendChild(el);
-            }
-        }
-
-        function renderCharts() {
-            if(pieChart) pieChart.destroy();
-            if(barChart) barChart.destroy();
-
-            const otRecords = localData.records.filter(r => r.type === 'OT');
-            
-            // 1. Pie Chart Data
-            let dist = { work: 0, sat: 0, holiday: 0 };
-            otRecords.forEach(r => {
-                const d = new Date(r.date);
-                const status = getDayStatus(d);
-                const val = parseFloat(r.val);
-                if(status.type === 'HOLIDAY' || d.getDay()===0) dist.holiday += val;
-                else if(d.getDay()===6) dist.sat += val;
-                else dist.work += val;
-            });
-
-            const ctxPie = document.getElementById('pieChart').getContext('2d');
-            pieChart = new Chart(ctxPie, {
-                type: 'doughnut',
-                data: {
-                    labels: ['工作日', '週六', '紅日/週日'],
-                    datasets: [{
-                        data: [dist.work, dist.sat, dist.holiday],
-                        backgroundColor: ['#f87171', '#60a5fa', '#fbbf24']
-                    }]
-                },
-                options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
-            });
-
-            // 2. Bar Chart Data (Monthly)
-            let monthly = {};
-            otRecords.forEach(r => {
-                const key = r.date.substring(0, 7); // YYYY-MM
-                if(!monthly[key]) monthly[key] = 0;
-                monthly[key] += parseFloat(r.val);
-            });
-            // Sort keys
-            const labels = Object.keys(monthly).sort();
-            const data = labels.map(k => monthly[k]);
-
-            const ctxBar = document.getElementById('barChart').getContext('2d');
-            barChart = new Chart(ctxBar, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'OT 時數',
-                        data: data,
-                        backgroundColor: '#d6c6b9',
-                        borderRadius: 6
-                    }]
-                },
-                options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
-            });
-        }
 
         async function pushToCloud() { await setDoc(docRef, localData); }
 
@@ -515,7 +452,6 @@
                 if(!s.baseSat) return { type: 'OFF', name: '週六', isOff: true }; 
                 const base = new Date(s.baseSat); const target = new Date(dStr);
                 if(target < base) return { type: 'OFF', name: '週六', isOff: true };
-                
                 let cnt = 0, curr = new Date(base);
                 while(curr <= target) {
                     const cStr = curr.toISOString().split('T')[0];
@@ -528,13 +464,57 @@
         }
 
         function refreshApp() {
+            renderBigCalendar();
             const dStr = selectedDate.toISOString().split('T')[0];
             const status = getDayStatus(selectedDate);
-            const badge = status.isOff ? (status.type==='HOLIDAY' ? `<span style="background:#fff1f2;color:#e11d48;padding:2px 6px;border-radius:6px;font-size:0.7rem">${status.name}</span>` : `<span style="background:#e6f0e6;color:#5d7a5f;padding:2px 6px;border-radius:6px;font-size:0.7rem">休假</span>`) : `<span style="background:#fff7ed;color:#c2410c;padding:2px 6px;border-radius:6px;font-size:0.7rem">上班</span>`;
-            document.getElementById('dateTitleLabel').innerHTML = `${dStr} ${badge}`;
+            const badgeClass = status.isOff ? (status.type==='HOLIDAY'?'badge-hol':'badge-off') : 'badge-work';
+            const statusText = status.isOff ? (status.type==='HOLIDAY'?status.name:'休假') : '上班';
+            
+            document.getElementById('dateTitleLabel').innerHTML = dStr;
+            document.getElementById('dateStatusBadge').innerHTML = `<span class="dh-badge ${badgeClass}">${statusText}</span>`;
+
             const recs = localData.records.filter(r => r.date === dStr);
             document.getElementById('dayRecords').innerHTML = recs.length ? recs.map(renderItem).join('') : `<div style="text-align:center;padding:30px;color:#ccc;background:#faf9f7;border-radius:16px;border:1px solid #eee"><div style="font-size:0.9rem">無紀錄</div></div>`;
-            updateStats(); renderAllLogs(); generateScroller();
+            updateStats(); renderAllLogs();
+        }
+
+        function renderBigCalendar() {
+            const grid = document.getElementById('bcBody'); grid.innerHTML = '';
+            const y = calViewDate.getFullYear(), m = calViewDate.getMonth();
+            document.getElementById('bcTitle').innerText = `${y}年 ${m+1}月`;
+            
+            const firstDay = new Date(y, m, 1).getDay();
+            const daysInMonth = new Date(y, m+1, 0).getDate();
+            const todayStr = new Date().toISOString().split('T')[0];
+            const selStr = selectedDate.toISOString().split('T')[0];
+
+            for(let i=0; i<firstDay; i++) grid.innerHTML += '<div></div>';
+
+            for(let i=1; i<=daysInMonth; i++) {
+                const date = new Date(y, m, i);
+                const dStr = date.toISOString().split('T')[0];
+                const status = getDayStatus(date);
+                const recs = localData.records.filter(r => r.date === dStr);
+                
+                const el = document.createElement('div');
+                el.className = `bc-day ${dStr===todayStr?'today':''} ${dStr===selStr?'selected':''}`;
+                if(status.type === 'HOLIDAY') el.style.color = '#ef4444';
+                
+                let dotHtml = '';
+                if(status.type === 'HOLIDAY') dotHtml += '<div class="dot holiday"></div>';
+                if(recs.length > 0) dotHtml += '<div class="dot record"></div>';
+                
+                el.innerHTML = `<span>${i}</span><div class="bc-dots">${dotHtml}</div>`;
+                el.onclick = () => window.app.selectDate(date);
+                grid.appendChild(el);
+            }
+        }
+
+        function selectDate(d) {
+            selectedDate = d;
+            // Sync calendar view if jumping
+            if(d.getMonth() !== calViewDate.getMonth()) calViewDate = new Date(d);
+            refreshApp();
         }
 
         function renderAllLogs() {
@@ -543,47 +523,70 @@
         }
         function renderItem(r) {
             const isOT = r.type === 'OT';
-            return `<div class="log-item" onclick="window.appSelectRecord(${r.id})"><div class="log-icon ${isOT?'icon-ot':'icon-leave'}"><i class="fa-solid ${isOT?'fa-clock':'fa-mug-hot'}"></i></div><div class="log-main"><div class="log-title">${isOT?'OT 加班' : r.subType}</div><div class="log-date">${r.date} ${r.note?'· '+r.note:''}</div></div><div class="log-val">${isOT ? '+'+r.val+'h' : '-'+r.val+'天'}</div></div>`;
+            return `<div class="log-item" onclick="window.appSelectRecord(${r.id})"><div class="log-icon ${isOT?'icon-ot':'icon-leave'}"><i class="fa-solid ${isOT?'fa-clock':'fa-mug-hot'}"></i></div><div class="log-main"><div class="log-title">${isOT?'OT 加班' : (r.subType==='AL'?'年假 (AL)':'病假 (SL)')}</div><div class="log-date">${r.date} ${r.note?'· '+r.note:''}</div></div><div class="log-val">${isOT ? '+'+r.val+'h' : '-'+r.val+'天'}</div></div>`;
         }
         window.appSelectRecord = (id) => { const r = localData.records.find(item => item.id === id); if(r) openModal(r); };
 
         function updateStats() {
             const s = localData.settings;
-            const joinD = s.joinDate ? new Date(s.joinDate) : new Date(); 
             const now = new Date();
+            
+            // 1. SL Calculation (Cumulative since join)
+            const joinD = s.joinDate ? new Date(s.joinDate) : new Date(); 
             let months = (now.getFullYear() - joinD.getFullYear()) * 12 + (now.getMonth() - joinD.getMonth());
             if(now.getDate() < joinD.getDate()) months--;
-            const sl = Math.max(0, months * 2) - localData.records.filter(r=>r.type==='Leave'&&r.subType==='SL').reduce((a,b)=>a+Number(b.val),0);
-            const ot = localData.records.filter(r=>r.type==='OT').reduce((a,b)=>a+Number(b.val),0);
-            const al = s.alBalance - localData.records.filter(r=>r.type==='Leave'&&r.subType==='AL').reduce((a,b)=>a+Number(b.val),0);
-            document.getElementById('dispSL').innerText = sl; document.getElementById('dispOT').innerText = ot.toFixed(1);
-            document.getElementById('dispOTDays').innerText = (ot/(s.dailyHours||8)).toFixed(1); document.getElementById('dispAL').innerText = al;
-        }
+            const totalSL = Math.max(0, months * 2);
+            const usedSL = localData.records.filter(r=>r.type==='Leave'&&r.subType==='SL').reduce((a,b)=>a+Number(b.val),0);
+            
+            document.getElementById('cardSL_Total').innerText = totalSL;
+            document.getElementById('cardSL_Used').innerText = usedSL;
+            const remSL = totalSL - usedSL;
+            document.getElementById('cardSL_Rem').innerText = remSL;
+            document.getElementById('barSL').style.width = (totalSL > 0 ? (usedSL/totalSL)*100 : 0) + '%';
 
-        function generateScroller() {
-            const el = document.getElementById('dateScroller'); el.innerHTML = '';
-            const start = new Date(currentViewDate); 
-            start.setDate(start.getDate() - 15);
+            // 2. OT Calculation
+            const totalOTHours = localData.records.filter(r=>r.type==='OT').reduce((a,b)=>a+Number(b.val),0);
+            document.getElementById('cardOT_Hours').innerText = totalOTHours.toFixed(1);
             
-            for(let i=0; i<60; i++) {
-                const d = new Date(start); d.setDate(start.getDate() + i);
-                const dStr = d.toISOString().split('T')[0];
-                const status = getDayStatus(d);
-                const isSel = dStr === selectedDate.toISOString().split('T')[0];
-                const hasData = localData.records.some(r => r.date === dStr);
-                const chip = document.createElement('div');
-                chip.className = `date-chip ${isSel?'active':''} ${hasData?'has-data':''} ${status.type==='HOLIDAY'?'is-holiday':''}`;
-                chip.onclick = () => selectDate(d);
-                chip.innerHTML = `<span>${['日','一','二','三','四','五','六'][d.getDay()]}</span><span>${d.getDate()}</span><div class="has-data-dot"></div>`;
-                el.appendChild(chip);
+            // 3. Comp Leave Logic (Smart Deduction)
+            const dailyHours = s.dailyHours || 8;
+            const earnedCompDays = totalOTHours / dailyHours; // Total potential days from OT
+            
+            // Filter AL usage for CURRENT year (Sept 1 - Aug 31)
+            let currentYear = now.getFullYear();
+            if(now.getMonth() < 8) currentYear--; // Before Sept, use prev year
+            const startAL = new Date(currentYear, 8, 1); // Sept 1
+            
+            const vacationRecords = localData.records.filter(r => 
+                r.type==='Leave' && r.subType==='AL' && new Date(r.date) >= startAL
+            );
+            const totalVacationTaken = vacationRecords.reduce((a,b)=>a+Number(b.val),0);
+
+            // Logic: Deduct from Comp Leave first, then AL
+            let usedComp = 0;
+            let usedAL = 0;
+
+            if(totalVacationTaken <= earnedCompDays) {
+                usedComp = totalVacationTaken;
+                usedAL = 0;
+            } else {
+                usedComp = earnedCompDays;
+                usedAL = totalVacationTaken - earnedCompDays;
             }
-            
-            setTimeout(()=> {
-                const chip = Array.from(document.querySelectorAll('.date-chip')).find(el => el.innerHTML.includes(selectedDate.getDate()));
-                if(chip && selectedDate.getMonth() === currentViewDate.getMonth()) chip.scrollIntoView({inline:'center'});
-            }, 100);
+
+            // Render Comp Leave Card
+            document.getElementById('cardCL_Total').innerText = earnedCompDays.toFixed(1);
+            document.getElementById('cardCL_Used').innerText = usedComp.toFixed(1);
+            document.getElementById('cardCL_Rem').innerText = (earnedCompDays - usedComp).toFixed(1);
+            document.getElementById('barCL').style.width = (earnedCompDays > 0 ? (usedComp/earnedCompDays)*100 : 0) + '%';
+
+            // Render AL Card
+            const totalAL = s.alBalance; // Yearly quota
+            document.getElementById('cardAL_Total').innerText = totalAL;
+            document.getElementById('cardAL_Used').innerText = usedAL.toFixed(1);
+            document.getElementById('cardAL_Rem').innerText = (totalAL - usedAL).toFixed(1);
+            document.getElementById('barAL').style.width = (totalAL > 0 ? (usedAL/totalAL)*100 : 0) + '%';
         }
-        function selectDate(d) { selectedDate = d; refreshApp(); }
         
         function openModal(r = null) {
             document.getElementById('recModal').classList.add('open');
@@ -595,6 +598,11 @@
                 editId=r.id; 
                 document.getElementById('inpDate').value = r.date;
                 document.getElementById('inpNote').value=r.note||''; 
+                
+                // Holiday Checkbox Logic
+                const isHoliday = localData.settings.holidays.some(h=>h.date===r.date);
+                document.getElementById('chkIsHoliday').checked = isHoliday;
+
                 setType(r.type); 
                 if(r.type==='OT') document.getElementById('inpHours').value=r.val; 
                 else{ document.getElementById('inpLeaveType').value=r.subType; document.getElementById('inpDays').value=r.val; } 
@@ -604,6 +612,10 @@
                 editId=null; 
                 document.getElementById('recForm').reset(); 
                 document.getElementById('inpDate').value = dStr;
+                // Check if current date is holiday
+                const isHoliday = localData.settings.holidays.some(h=>h.date===dStr);
+                document.getElementById('chkIsHoliday').checked = isHoliday;
+
                 setType('OT'); 
                 document.getElementById('btnDel').style.display='none';
                 window.app.onModalDateChange(dStr);
@@ -616,16 +628,12 @@
             const i=document.getElementById('inpIn').value;
             const o=document.getElementById('inpOut').value;
             if(!i||!o) return;
-            
             const mi = i.split(':').reduce((h,m)=>h*60+Number(m),0);
             const mo = o.split(':').reduce((h,m)=>h*60+Number(m),0);
             const stdHours = Number(document.getElementById('inpStdVal').value);
-            
             let durationMins = mo - mi;
             if(durationMins < 0) durationMins += 24*60; 
-
             const otMins = Math.max(0, durationMins - (stdHours * 60));
-            
             document.getElementById('inpHours').value = (otMins / 60).toFixed(1);
             document.getElementById('otMsg').innerText = `總工時 ${(durationMins/60).toFixed(1)}h - 扣除 ${stdHours}h`;
         }
@@ -634,10 +642,19 @@
             e.preventDefault();
             const btn = e.target.querySelector('button[type="submit"]');
             const originalText = btn.innerText;
-            btn.innerText = "⏳ 儲存中..."; btn.disabled = true;
+            btn.innerText = "⏳..."; btn.disabled = true;
             try {
                 const dateVal = document.getElementById('inpDate').value;
                 if(!dateVal) throw new Error("請選擇日期");
+
+                // Handle Holiday Checkbox
+                const isHolidayCheck = document.getElementById('chkIsHoliday').checked;
+                const holIndex = localData.settings.holidays.findIndex(h=>h.date===dateVal);
+                if(isHolidayCheck) {
+                    if(holIndex === -1) localData.settings.holidays.push({date: dateVal, name: "自訂假期"});
+                } else {
+                    if(holIndex !== -1) localData.settings.holidays.splice(holIndex, 1);
+                }
 
                 const val = curType==='OT' ? document.getElementById('inpHours').value : document.getElementById('inpDays').value;
                 if(!val) throw new Error("請輸入數值");
@@ -648,29 +665,28 @@
                 localData.records.push(rec); 
                 
                 await pushToCloud(); 
-                alert("✅ 儲存成功！"); 
+                alert("✅ 成功！"); 
                 window.app.closeModal();
                 
-                const [y, m, d] = dateVal.split('-');
-                currentViewDate = new Date(y, m-1, 15); 
-                generateScroller();
-                window.app.selectDate(new Date(y, m-1, d)); 
+                // Refresh
+                if(new Date(dateVal).getMonth() !== calViewDate.getMonth()) {
+                    calViewDate = new Date(dateVal);
+                }
+                window.app.selectDate(new Date(dateVal));
 
-            } catch(err) { alert("❌ 錯誤：" + err.message); }
+            } catch(err) { alert("❌ " + err.message); }
             finally { btn.innerText = originalText; btn.disabled = false; }
         }
         
         async function delRecord(btn) { 
-            if(editId && confirm("確定刪除此紀錄？")) { 
-                btn.innerText = "刪除中...";
+            if(editId && confirm("刪除此紀錄？")) { 
                 try { localData.records = localData.records.filter(r=>r.id!==editId); await pushToCloud(); window.app.closeModal(); } 
-                catch(e){ alert("刪除失敗"); btn.innerText="刪除"; }
+                catch(e){ alert("刪除失敗"); }
             } 
         }
         
         setTimeout(()=> {
-            const chip = Array.from(document.querySelectorAll('.date-chip')).find(el => el.innerHTML.includes(selectedDate.getDate()));
-            if(chip) chip.scrollIntoView({inline:'center'});
+            refreshApp();
         }, 500);
     </script>
 </body>
