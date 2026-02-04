@@ -313,7 +313,7 @@
         // 🔧 USER CONFIG: Add users here
         // ======================================================
         const ALLOWED_USERS = {
-            "WINGYAN": "852258", // Username: Password
+            "adaim": "0000", // Username: Password
             "FTH": "77461"
         };
         // ======================================================
@@ -384,7 +384,7 @@
         }
 
         function initFirebase() {
-            const loading = document.getElementById('loadingMask');
+            const docId = (u === 'admin') ? 'personal_data_v2' : ('data_' + u);
             loading.style.display = 'flex';
             
             onSnapshot(docRef, (docSnap) => {
